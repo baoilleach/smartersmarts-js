@@ -122,7 +122,7 @@ function HandleResult(smi, score)
   $('#entryboxicon').removeClass("glyphicon-remove").addClass("glyphicon-ok");
 
   let atommap_smi = IsotopeToAtomMap(smi);
-  var elem = $('<img src="https://compchem.soseiheptares.com/depict/depict/cow/png?abbr=off&hdisp=provided&disp=bridgehead&annotate=colmap&showtitle=true&smi=' + myencode(atommap_smi) + '" score="' + score + '" />\n')[0];
+  var elem = $('<img src="https://www.simolecule.com/cdkdepict/depict/cow/png?abbr=off&hdisp=provided&disp=bridgehead&annotate=colmap&showtitle=true&smi=' + myencode(atommap_smi) + '" score="' + score + '" />\n')[0];
 
   var png_section = document.getElementById("dv_png");
   if ($(png_section).hasClass("limbo")) { // will only be the case for the first entry
