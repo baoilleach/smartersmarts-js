@@ -5,13 +5,54 @@ var STATE = Backbone.Model.extend({
   defaults: {
     "smarts": undefined,
     "toolkit": "openbabel",
-    "help": false
+    "help": false,
+    "terminate": false,
+    "first_result": undefined,
   }
 });
 window.state = new STATE;
-state.on("change:smarts", MakePrediction);
-state.on("change:toolkit", MakePrediction);
+state.on("change:smarts", StartSearch);
+state.on("change:toolkit", StartSearch);
 state.on("change:help", HandleHelp);
+state.on("change:terminate", HandleTerminate);
+
+function HandleTerminate() {
+  if (state.get("terminate")) {
+    $('#progress-bar').addClass("bg-warning");
+  } else {
+    $('#progress-bar').removeClass("bg-warning");
+  }
+}
+
+// Start the Web workers
+workers = {};
+toolkits = ["openbabel", "indigo"];
+for (var i=0; i<toolkits.length; i++) {
+  workers[toolkits[i]] = new Worker('static/js/worker.' + toolkits[i] + '.js');
+  workers[toolkits[i]].onmessage = (e) => {
+    console.log(e.data);
+    if (!(e.data.toolkit == state.get("toolkit") &&
+          e.data.smarts == state.get("smarts"))) {
+      return;
+    }
+    if (e.data.type == "hit") {
+      HandleResult(e.data.smi, e.data.score);
+    }
+    else if (e.data.type == "status") {
+      UpdateProgressBar(e.data.finished, e.data.percent);
+      if (!e.data.finished && !state.get("terminate")) {
+        workers[state.get("toolkit")].postMessage({smarts: state.get("smarts"), startidx:e.data.idx});
+      }
+    }
+    else if (e.data.type == "smartsok") {
+      if (!e.data.message) {
+        HandleInvalid();
+      } else {
+        HandleValid();
+      }
+    }
+  }
+}
 
 function HandleHelp()
 {
@@ -42,25 +83,6 @@ var SNSRouter = Backbone.Router.extend({
   }
 
 });
-
-function CreateWebWorker()
-{
-  if (typeof(myWorker) !== "undefined") {
-    myWorker.terminate();
-  }
-  myWorker = new Worker('static/js/worker.' + state.get("toolkit") + '.js');
-  myWorker.onmessage = (e) => {
-    if (e.data.type == "hit") {
-      HandleResult(e.data.smi, e.data.score);
-    }
-    else if (e.data.type == "status") {
-      UpdateProgressBar(e.data.finished, e.data.percent);
-    }
-    else if (e.data.type == "error") {
-      HandleInvalid();
-    }
-  }
-}
 
 function UpdateProgressBar(finished, percent)
 {
@@ -101,6 +123,12 @@ $(function() {
   Initialize();
 });
 
+function HandleValid()
+{
+  $('#dv_png').removeClass("limbo");
+  $('#dv_pk').removeClass("limbo");
+  $('#entrybox').addClass("is-valid").removeClass("is-invalid");
+}
 function HandleInvalid()
 {
   $('#dv_png').addClass("limbo");
@@ -149,15 +177,15 @@ function IsotopeToAtomMap(smi)
 
 function HandleResult(smi, score)
 {
-  $('#entrybox').removeClass("is-invalid").addClass("is-valid");
-
   let atommap_smi = IsotopeToAtomMap(smi);
   var elem = $('<img src="https://www.simolecule.com/cdkdepict/depict/cow/png?abbr=off&hdisp=provided&disp=bridgehead&annotate=colmap&showtitle=true&smi=' + myencode(atommap_smi) + '" score="' + score + '" />\n')[0];
 
   var png_section = document.getElementById("dv_png");
-  if ($(png_section).hasClass("limbo")) { // will only be the case for the first entry
-    $(png_section).removeClass("limbo");
+  if (state.get("first_result")) {
     png_section.innerHTML = "";
+    $(png_section).removeClass("limbo");
+    $('#dv_progress').removeClass("limbo");
+    state.set("first_result", false);
   }
   var children = png_section.children;
   if (children.length == 0) {
@@ -176,22 +204,12 @@ function HandleResult(smi, score)
       }
     }
   }
-  $('#dv_png').removeClass("limbo");
   if (children.length > 200) {
     // Let's just stop if there are quite a few hits
     //  - CDK Depict might not be too happy otherwise
-    myWorker.terminate();
+    state.set("terminate", true);
   }
 }
-
-function HandleSearch() {
-  $('#entryboxicon').removeClass("glyphicon-remove").removeClass("glyphicon-ok");
-  $('#dv_png').addClass("limbo");
-  $('#dv_pk').addClass("limbo");
-  UpdateProgressBar(false, 0);
-  $('#progress').removeClass("progress-hide");
-}
-
 
 function IsInvalidQuick(smarts)
 {
@@ -208,14 +226,19 @@ function IsInvalidQuick(smarts)
   return (bracket!=0 || paren!=0);
 }
 
-function MakePrediction()
+function StartSearch()
 {
   smarts = state.get("smarts");
   if (IsInvalidQuick(smarts)) {
     HandleInvalid();
     return;
   }
-  HandleSearch();
-  CreateWebWorker();
-  myWorker.postMessage(smarts);
+  $('#entryboxicon').removeClass("is-valid").removeClass("is-invalid");
+  $('#dv_png').addClass("limbo");
+  $('#dv_pk').addClass("limbo");
+  UpdateProgressBar(false, 0);
+  $('#progress').removeClass("progress-hide");
+  state.set("first_result", true);
+  state.set("terminate", false);
+  workers[state.get("toolkit")].postMessage({smarts: smarts, startidx: 0});
 }
