@@ -21,5 +21,8 @@ img {
   opacity: 0.4;
 }
 .hide {
+  display: none;
+}
+.progress-hide {
   opacity: 0%;
 }

@@ -1,6 +1,32 @@
 function myencode(text) {return encodeURIComponent(text);}
 function mydecode(text) {return text;}
 
+var STATE = Backbone.Model.extend({
+  defaults: {
+    "smarts": undefined,
+    "toolkit": "openbabel",
+    "help": false
+  }
+});
+window.state = new STATE;
+state.on("change:smarts", MakePrediction);
+state.on("change:toolkit", MakePrediction);
+state.on("change:help", HandleHelp);
+
+function HandleHelp()
+{
+  help = state.get("help");
+  if (help) {
+    $('#help').removeClass("hide");
+    $('#dv_png').hide();
+    $('#about').html("Close");
+  } else {
+    $('#dv_png').show();
+    $('#help').addClass("hide");
+    $('#about').html("About");
+  }
+}
+
 var SNSRouter = Backbone.Router.extend({
 
   routes: {
@@ -9,10 +35,10 @@ var SNSRouter = Backbone.Router.extend({
 
   search: function(smarts) {
     var decoded = mydecode(smarts);
-    MakePrediction(smarts);
     if ($('#entrybox').val() != decoded) {
       $('#entrybox').val(decoded);
     }
+    state.set("smarts", smarts);
   }
 
 });
@@ -22,7 +48,7 @@ function CreateWebWorker()
   if (typeof(myWorker) !== "undefined") {
     myWorker.terminate();
   }
-  myWorker = new Worker('static/js/worker.js');
+  myWorker = new Worker('static/js/worker.' + state.get("toolkit") + '.js');
   myWorker.onmessage = (e) => {
     if (e.data.type == "hit") {
       HandleResult(e.data.smi, e.data.score);
@@ -41,7 +67,7 @@ function UpdateProgressBar(finished, percent)
   let pb = $('#progress');
   pb.css("width", percent + "%");
   if (finished) {
-    pb.addClass("hide");
+    pb.addClass("progress-hide");
   }
 }
 
@@ -56,10 +82,16 @@ function Initialize()
     typingTimer = setTimeout(function(){app.navigate("search/"+myencode($('#entrybox').val())+"/", {trigger: true});},
                              doneTypingInterval);
   });
-  $('#entrybox').on('keydown', function () {
+  $('#entrybox').on('keydown', function() {
     clearTimeout(typingTimer);
   });
-
+  $('#toolkit').change(function() {
+    state.set("toolkit", $(this).val());
+  });
+  $('#about').on('click', function() {
+    help = state.get("help");
+    state.set("help", !help);
+  });
 }
 
 $(function() {
@@ -73,8 +105,7 @@ function HandleInvalid()
 {
   $('#dv_png').addClass("limbo");
   $('#dv_pk').addClass("limbo");
-  $('#entryform').removeClass("has-success").addClass("has-warning");
-  $('#entryboxicon').removeClass("glyphicon-ok").addClass("glyphicon-remove");
+  $('#entrybox').removeClass("is-valid").addClass("is-invalid");
 }
 
 function InsertAfter(referenceNode, newNode)
@@ -118,8 +149,7 @@ function IsotopeToAtomMap(smi)
 
 function HandleResult(smi, score)
 {
-  $('#entryform').removeClass("has-warning").addClass("has-success");
-  $('#entryboxicon').removeClass("glyphicon-remove").addClass("glyphicon-ok");
+  $('#entrybox').removeClass("is-invalid").addClass("is-valid");
 
   let atommap_smi = IsotopeToAtomMap(smi);
   var elem = $('<img src="https://www.simolecule.com/cdkdepict/depict/cow/png?abbr=off&hdisp=provided&disp=bridgehead&annotate=colmap&showtitle=true&smi=' + myencode(atommap_smi) + '" score="' + score + '" />\n')[0];
@@ -159,7 +189,7 @@ function HandleSearch() {
   $('#dv_png').addClass("limbo");
   $('#dv_pk').addClass("limbo");
   UpdateProgressBar(false, 0);
-  $('#progress').removeClass("hide");
+  $('#progress').removeClass("progress-hide");
 }
 
 
@@ -178,8 +208,9 @@ function IsInvalidQuick(smarts)
   return (bracket!=0 || paren!=0);
 }
 
-function MakePrediction(smarts)
+function MakePrediction()
 {
+  smarts = state.get("smarts");
   if (IsInvalidQuick(smarts)) {
     HandleInvalid();
     return;

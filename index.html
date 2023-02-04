@@ -10,41 +10,51 @@
 
     <!-- Javascript -->
     <script src="static/ext/js/jquery-3.3.1.min.js"></script>
-    <script src="static/ext/js/bootstrap-3.3.7.min.js"></script>
+    <script src="static/ext/js/bootstrap-5.0.2.min.js"></script>
     <script src="static/ext/js/underscore-1.8.3.min.js"></script>
     <script src="static/ext/js/backbone-1.3.3.min.js"></script>
     <script src="static/js/smarter.js" charset="utf-8"></script>
 
     <!-- CSS -->
-    <link href="static/ext/css/bootstrap-3.3.7.min.css" rel="stylesheet">
-    <link href="static/ext/css/bootstrap-theme-3.3.7.min.css" rel="stylesheet">
+    <!--<link href="static/ext/css/bootstrap-icons-1.10.3.css" rel="stylesheet">-->
+    <link href="static/ext/css/bootstrap-5.0.2.min.css" rel="stylesheet">
     <link href="static/css/smarter.css" rel="stylesheet">
 
   </head>
   <body>
   <div class="container theme-showcase" role="main">
+    <span id="about" style="float:right">About</span>
     <center>
       <h1>Smarter SMARTS</h1>
     </center>
-    <div>
+  <div>
 
   </div>
 
   <div class="row">
     <div class="col-sm-2"></div>
     <div class="col-sm-8">
-      <div class="form-group has-success has-feedback" id="entryform">
-        <label class="control-label sr-only" for="entrybox">Enter SMARTS (e.g. C[OH])</label>
+      <div class="input-group has-success has-feedback" id="entryform">
+        <span class="input-group-text" id="inputGroupPrepend">
+          <select id="toolkit" class="form-select pb-0 pl-0 pt-0" aria-label="Cheminformatics toolki">
+            <option value="openbabel" selected>Open Babel</option>
+            <option value="indigo">Indigo</option>
+          </select>
+        </span>
         <input type="text" class="form-control" id="entrybox" placeholder="Enter SMARTS (e.g. C[OH])">
-        <span class="glyphicon glyphicon-ok form-control-feedback" id="entryboxicon" aria-hidden="true"></span>
       </div>
-      <div id="progress" class="progress hide" style="height: 1px;">
+      <div id="progress" class="progress progress-hide" style="height: 1px;">
         <div class="progress-bar" role="progressbar" style="width: 100%;"></div>
       </div>
     </div><!-- /col-sm-8 -->
     <div class="col-sm-2"></div>
   </div>
   <div id="dv_png">
+  </div>
+  <div id="help" class="hide row">
+    <div class="col-sm-2"></div>
+    <div class="col-sm-8"><p>Smarter SMARTS is a tool to help you learn to write better SMARTS patterns. For more details, see my blog post "<a href="https://baoilleach.blogspot.com/2018/11/smarts-for-dummies.html">SMARTS for Dummies</a>" (2018).</p><p>Smarter SMARTS was originally developed by me (i.e. Noel O'Boyle) while at NextMove Software. My thanks to Roger Sayle for allowing me to make it available. The original codebase was a Python webapp that used OEChem, and the code is available <a href="https://github.com/baoilleach/smartersmarts-py">here</a>.</p><p>This implementation is a JavaScript webapp that uses cheminformatics toolkits that have been compiled to JavaScript. The code can be found <a href="https://github.com/baoilleach/smartersmarts-js">here</a>. My thanks to Chen Jiang (@partridgejiang) for help with indigo.js and openbabel.js.</p></div>
+    <div class="col-sm-2"></div>
   </div>
 </div>
 
