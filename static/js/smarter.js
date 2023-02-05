@@ -71,15 +71,19 @@ function HandleHelp()
 var SNSRouter = Backbone.Router.extend({
 
   routes: {
-    "search/:smarts/": "search",
+    "search/:toolkit/:smarts/": "search",
   },
 
-  search: function(smarts) {
+  search: function(toolkit, smarts) {
     var decoded = mydecode(smarts);
     if ($('#entrybox').val() != decoded) {
       $('#entrybox').val(decoded);
     }
     state.set("smarts", smarts);
+    if ($('#toolkit').val() != toolkit) {
+      $('#toolkit').val(toolkit);
+    }
+    state.set("toolkit", toolkit);
   }
 
 });
@@ -101,14 +105,15 @@ function Initialize()
   $('#entrybox').on("change keyup paste", function() {
     clearTimeout(typingTimer);
     var doneTypingInterval = 1000;
-    typingTimer = setTimeout(function(){app.navigate("search/"+myencode($('#entrybox').val())+"/", {trigger: true});},
+    typingTimer = setTimeout(function(){app.navigate("search/"+state.get("toolkit")+"/"+myencode($('#entrybox').val())+"/", {trigger: true});},
                              doneTypingInterval);
   });
   $('#entrybox').on('keydown', function() {
     clearTimeout(typingTimer);
   });
   $('#toolkit').change(function() {
-    state.set("toolkit", $(this).val());
+    toolkit = $(this).val();
+    app.navigate("search/"+toolkit+"/"+myencode($('#entrybox').val())+"/", {trigger: true});
   });
   $('#about').on('click', function() {
     help = state.get("help");
