@@ -57,11 +57,9 @@ function CalculateScore(atomtypes)
   return p;
 }
 
-// data: smarts, smartidx
 function HandleSmarts(data)
 {
-  console.log(data);
-  if (data.smarts != SMARTS) {
+  if (data.startidx == 0) {
     SMARTS = data.smarts;
     SMARTSOBJ = new OpenBabel.OBSmartsPattern();
     SEEN = {}
@@ -92,7 +90,7 @@ function HandleSmarts(data)
         for(var i=0; i<maplist.size(); i++) {
           var atomidx = maplist.get(i);
           var match_atom = mol.GetAtom(atomidx);
-          match_atom.SetIsotope(i==0 ? 1 : 2);
+          match_atom.SetIsotope(i==0 ? 7 : 8);
         }
         SEEN[mhash] = {smi: smi, score: CalculateScore(atomtypes)};
         postMessage({type: "hit",

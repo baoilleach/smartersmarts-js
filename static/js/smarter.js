@@ -30,7 +30,7 @@ toolkits = ["openbabel", "indigo"];
 for (var i=0; i<toolkits.length; i++) {
   workers[toolkits[i]] = new Worker('static/js/worker.' + toolkits[i] + '.js');
   workers[toolkits[i]].onmessage = (e) => {
-    console.log(e.data);
+    if (e.data.type != "status") {console.log(e.data);}
     if (!(e.data.toolkit == state.get("toolkit") &&
           e.data.smarts == state.get("smarts"))) {
       return;
@@ -125,14 +125,12 @@ $(function() {
 
 function HandleValid()
 {
-  $('#dv_png').removeClass("limbo");
-  $('#dv_pk').removeClass("limbo");
+  $('#dv_png').removeClass("limbo").html("");
   $('#entrybox').addClass("is-valid").removeClass("is-invalid");
 }
 function HandleInvalid()
 {
   $('#dv_png').addClass("limbo");
-  $('#dv_pk').addClass("limbo");
   $('#entrybox').removeClass("is-valid").addClass("is-invalid");
 }
 
@@ -151,7 +149,7 @@ function IsotopeToAtomMap(smi)
   let ans = [];
   for (let i=0; i<smi.length; i++) {
     let c = smi[i];
-    if (c=='[' && IsDigit(smi[i+1]) && !IsDigit(smi[i+2])) {
+    if (c=='[' && (smi[i+1]=='7' || smi[i+1]=='8') && !IsDigit(smi[i+2])) {
       ans.push(c);
       let isotope = smi[i+1];
       i++;
@@ -163,7 +161,7 @@ function IsotopeToAtomMap(smi)
         }
         ans.push(c)
       }
-      // Invariant: c==']', smi[i] = ']'
+      // Invariant: c==']'
       ans.push(':');
       ans.push(isotope);
       ans.push(c);
@@ -182,8 +180,6 @@ function HandleResult(smi, score)
 
   var png_section = document.getElementById("dv_png");
   if (state.get("first_result")) {
-    png_section.innerHTML = "";
-    $(png_section).removeClass("limbo");
     $('#dv_progress').removeClass("limbo");
     state.set("first_result", false);
   }
@@ -235,10 +231,9 @@ function StartSearch()
   }
   $('#entryboxicon').removeClass("is-valid").removeClass("is-invalid");
   $('#dv_png').addClass("limbo");
-  $('#dv_pk').addClass("limbo");
   UpdateProgressBar(false, 0);
   $('#progress').removeClass("progress-hide");
   state.set("first_result", true);
   state.set("terminate", false);
-  workers[state.get("toolkit")].postMessage({smarts: smarts, startidx: 0});
+  workers[state.get("toolkit")].postMessage({smarts: state.get('smarts'), startidx: 0});
 }
